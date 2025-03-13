@@ -109,7 +109,7 @@ function install_node() {
 
     echo -e "${CLR_INFO}Введите имя валидатора:${CLR_RESET}"
     read -r VALIDATOR_NAME
-    echo -e "${CLR_INFO}Введите private key EVM кошелька:${CLR_RESET}"
+    echo -e "${CLR_INFO}Введите private key EVM кошелька c 0x в начале:${CLR_RESET}"
     read -r PRIVATE_KEY
 
     for NETWORK in "${SELECTED_NETWORKS[@]}"; do
