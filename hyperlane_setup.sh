@@ -8,6 +8,7 @@ CLR_ERROR='\033[1;31;40m'  # Красный текст на черном фон�
 CLR_RESET='\033[0m'  # Сброс форматирования
 CLR_GREEN='\033[0;32m' # Зеленый текст
 
+# Доступные сети
 NETWORKS=(base optimism arbitrum polygon avalanche scroll linea gnosis abstract zora)
 
 # Функция отображения логотипа
@@ -70,6 +71,19 @@ function remove_node() {
         docker rm "hyperlane_$NETWORK"
         rm -rf "$HOME/hyperlane_db_$NETWORK"
         echo -e "${CLR_SUCCESS}Нода $NETWORK удалена.${CLR_RESET}"
+    else
+        echo -e "${CLR_ERROR}Неверный выбор сети.${CLR_RESET}"
+    fi
+}
+
+# Функция переустановки конкретной ноды
+function reinstall_node() {
+    NETWORK=$(select_network)
+    if [ -n "$NETWORK" ]; then
+        echo -e "${CLR_INFO}Введите RPC для сети $NETWORK:${CLR_RESET}"
+        read -r RPC_URL
+        remove_node "$NETWORK"
+        install_node "$NETWORK" "$RPC_URL"
     else
         echo -e "${CLR_ERROR}Неверный выбор сети.${CLR_RESET}"
     fi
