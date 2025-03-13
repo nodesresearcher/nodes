@@ -42,13 +42,25 @@ function select_network() {
 
 # Функция просмотра логов
 function view_logs() {
-    NETWORK=$(select_network)
-    if [ -n "$NETWORK" ]; then
-        echo -e "${CLR_INFO}Логи для сети $NETWORK:${CLR_RESET}"
-        docker logs --tail 100 -f "hyperlane_$NETWORK"
-    else
-        echo -e "${CLR_ERROR}Неверный выбор сети.${CLR_RESET}"
-    fi
+    echo -e "${CLR_INFO}Выберите сеть для просмотра логов:${CLR_RESET}"
+    
+    select NETWORK in base optimism arbitrum polygon avalanche bsc fantom moonbeam gnosis celo; do
+        if [ -n "$NETWORK" ]; then
+            CONTAINER_NAME="hyperlane_$NETWORK"
+
+            # Проверяем, существует ли контейнер перед тем, как запускать логи
+            if docker ps -a --format "{{.Names}}" | grep -q "^$CONTAINER_NAME$"; then
+                echo -e "${CLR_INFO}Просмотр логов для $NETWORK...${CLR_RESET}"
+                docker logs --tail 50 -f "$CONTAINER_NAME"
+            else
+                echo -e "${CLR_ERROR}Контейнер $CONTAINER_NAME не найден!${CLR_RESET}"
+                sleep 2
+            fi
+        else
+            echo -e "${CLR_WARNING}Неверный выбор! Попробуйте снова.${CLR_RESET}"
+        fi
+        break
+    done
 }
 
 # Функция удаления конкретной ноды
