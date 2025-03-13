@@ -8,6 +8,8 @@ CLR_ERROR='\033[1;31;40m'  # Красный текст на черном фон�
 CLR_RESET='\033[0m'  # Сброс форматирования
 CLR_GREEN='\033[0;32m' # Зеленый текст
 
+NETWORKS=(base optimism arbitrum polygon avalanche bsc fantom moonbeam gnosis celo)
+
 # Функция для отображения логотипа
 function show_logo() {
     echo -e "${CLR_INFO}      Добро пожаловать в скрипт управления нодами Hyperlane      ${CLR_RESET}"
@@ -24,7 +26,7 @@ function install_dependencies() {
     fi
 }
 
-# Функция запроса сети у пользователя
+# Функция выбора сети
 function select_network() {
     echo -e "${CLR_INFO}Выберите сеть:${CLR_RESET}"
     for i in "${!NETWORKS[@]}"; do
@@ -34,59 +36,11 @@ function select_network() {
     if (( network_choice >= 1 && network_choice <= ${#NETWORKS[@]} )); then
         echo "${NETWORKS[$((network_choice-1))]}"
     else
-        echo ""  # Возвращаем пустую строку в случае неверного выбора
+        echo ""
     fi
 }
 
-# Функция установки ноды
-function install_node() {
-    install_dependencies
-    
-    echo -e "${CLR_INFO}Выберите количество сетей для установки:${CLR_RESET}"
-    echo -e "${CLR_GREEN}1) 3 сети${CLR_RESET}"
-    echo -e "${CLR_GREEN}2) 6 сетей${CLR_RESET}"
-    echo -e "${CLR_GREEN}3) 10 сетей${CLR_RESET}"
-    read -r network_choice
-
-    case $network_choice in
-        1) NETWORKS=(base optimism arbitrum) ;;
-        2) NETWORKS=(base optimism arbitrum polygon avalanche bsc) ;;
-        3) NETWORKS=(base optimism arbitrum polygon avalanche bsc fantom moonbeam gnosis celo) ;;
-        *) echo -e "${CLR_ERROR}Неверный выбор!${CLR_RESET}"; exit 1 ;;
-    esac
-
-    echo -e "${CLR_INFO}Введите имя валидатора:${CLR_RESET}"
-    read -r VALIDATOR_NAME
-    echo -e "${CLR_INFO}Введите private key EVM кошелька:${CLR_RESET}"
-    read -r PRIVATE_KEY
-
-    for NETWORK in "${NETWORKS[@]}"; do
-        echo -e "${CLR_INFO}Введите вашу RPC для сети $NETWORK:${CLR_RESET}"
-        read -r RPC_URL
-
-        mkdir -p "$HOME/hyperlane_db_$NETWORK" && chmod -R 777 "$HOME/hyperlane_db_$NETWORK"
-
-        docker run -d -it \
-            --name hyperlane_$NETWORK \
-            --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
-            gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
-            ./validator \
-            --db "/hyperlane_db_$NETWORK" \
-            --originChainName "$NETWORK" \
-            --reorgPeriod 1 \
-            --validator.id "$VALIDATOR_NAME" \
-            --checkpointSyncer.type localStorage \
-            --checkpointSyncer.folder "$NETWORK" \
-            --checkpointSyncer.path "/hyperlane_db_$NETWORK/${NETWORK}_checkpoints" \
-            --validator.key "$PRIVATE_KEY" \
-            --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
-            --chains."$NETWORK".customRpcUrls "$RPC_URL"
-    done
-
-    echo -e "${CLR_SUCCESS}Ноды Hyperlane успешно установлены и запущены!${CLR_RESET}"
-}
-
-# Функция просмотра логов конкретной ноды
+# Функция просмотра логов
 function view_logs() {
     NETWORK=$(select_network)
     if [ -n "$NETWORK" ]; then
@@ -110,19 +64,76 @@ function remove_node() {
     fi
 }
 
-# Функция установки конкретной ноды
+# Функция переустановки конкретной ноды
 function reinstall_node() {
     NETWORK=$(select_network)
     if [ -n "$NETWORK" ]; then
         echo -e "${CLR_INFO}Введите RPC для сети $NETWORK:${CLR_RESET}"
         read -r RPC_URL
+        remove_node "$NETWORK"
         install_node "$NETWORK" "$RPC_URL"
     else
         echo -e "${CLR_ERROR}Неверный выбор сети.${CLR_RESET}"
     fi
 }
 
-# Меню управления
+# Функция установки ноды
+function install_node() {
+    install_dependencies
+    
+    echo -e "${CLR_INFO}Выберите количество сетей для установки:${CLR_RESET}"
+    echo -e "${CLR_GREEN}1) 3 сети${CLR_RESET}"
+    echo -e "${CLR_GREEN}2) 6 сетей${CLR_RESET}"
+    echo -e "${CLR_GREEN}3) 10 сетей${CLR_RESET}"
+    echo -e "${CLR_GREEN}4) Выбрать конкретные сети${CLR_RESET}"
+    read -r network_choice
+
+    case $network_choice in
+        1) SELECTED_NETWORKS=(base optimism arbitrum) ;;
+        2) SELECTED_NETWORKS=(base optimism arbitrum polygon avalanche bsc) ;;
+        3) SELECTED_NETWORKS=("${NETWORKS[@]}") ;;
+        4) 
+            SELECTED_NETWORKS=()
+            echo -e "${CLR_INFO}Введите названия сетей через пробел (доступны: ${NETWORKS[*]})${CLR_RESET}"
+            read -ra CUSTOM_NETWORKS
+            for net in "${CUSTOM_NETWORKS[@]}"; do
+                if [[ " ${NETWORKS[*]} " =~ " $net " ]]; then
+                    SELECTED_NETWORKS+=("$net")
+                else
+                    echo -e "${CLR_WARNING}Сеть $net не найдена в списке.${CLR_RESET}"
+                fi
+            done
+            ;;
+        *) echo -e "${CLR_ERROR}Неверный выбор!${CLR_RESET}"; exit 1 ;;
+    esac
+
+    echo -e "${CLR_INFO}Введите имя валидатора:${CLR_RESET}"
+    read -r VALIDATOR_NAME
+    echo -e "${CLR_INFO}Введите private key EVM кошелька:${CLR_RESET}"
+    read -r PRIVATE_KEY
+
+    for NETWORK in "${SELECTED_NETWORKS[@]}"; do
+        echo -e "${CLR_INFO}Введите вашу RPC для сети $NETWORK:${CLR_RESET}"
+        read -r RPC_URL
+
+        mkdir -p "$HOME/hyperlane_db_$NETWORK" && chmod -R 777 "$HOME/hyperlane_db_$NETWORK"
+
+        docker run -d -it \
+            --name hyperlane_$NETWORK \
+            --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
+            gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
+            ./validator \
+            --db "/hyperlane_db_$NETWORK" \
+            --originChainName "$NETWORK" \
+            --reorgPeriod 1 \
+            --validator.id "$VALIDATOR_NAME" \
+            --validator.key "$PRIVATE_KEY" \
+            --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
+            --chains."$NETWORK".customRpcUrls "$RPC_URL"
+    done
+}
+
+# Меню
 function show_menu() {
     show_logo
     echo -e "${CLR_GREEN}1) 🚀 Установить ноды${CLR_RESET}"
@@ -130,19 +141,15 @@ function show_menu() {
     echo -e "${CLR_GREEN}3) 🗑️ Удалить конкретную ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 🔄 Переустановить конкретную ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}5) ❌ Выйти${CLR_RESET}"
-
-    echo -e "${CLR_INFO}Введите номер действия:${CLR_RESET}"
     read -r choice
-
     case $choice in
         1) install_node ;;
         2) view_logs ;;
         3) remove_node ;;
         4) reinstall_node ;;
-        5) echo -e "${CLR_ERROR}Выход...${CLR_RESET}"; exit 0 ;;
-        *) echo -e "${CLR_WARNING}Неверный выбор! Попробуйте снова.${CLR_RESET}"; show_menu ;;
+        5) exit 0 ;;
+        *) show_menu ;;
     esac
 }
 
-# Запуск меню
 show_menu
