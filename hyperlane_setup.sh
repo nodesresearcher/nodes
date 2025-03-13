@@ -131,17 +131,19 @@ function install_node() {
         mkdir -p "$HOME/hyperlane_db_$NETWORK" && chmod -R 777 "$HOME/hyperlane_db_$NETWORK"
 
         docker run -d -it \
-            --name hyperlane_$NETWORK \
-            --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
-            gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
-            ./validator \
-            --db "/hyperlane_db_$NETWORK" \
-            --originChainName "$NETWORK" \
-            --reorgPeriod 1 \
-            --validator.id "$VALIDATOR_NAME" \
-            --validator.key "$PRIVATE_KEY" \
-            --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
-            --chains."$NETWORK".customRpcUrls "$RPC_URL"
+    --name hyperlane_$NETWORK \
+    --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
+    gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
+    ./validator \
+    --db "/hyperlane_db_$NETWORK" \
+    --originChainName "$NETWORK" \
+    --reorgPeriod 1 \
+    --validator.id "$VALIDATOR_NAME" \
+    --validator.key "$PRIVATE_KEY" \
+    --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
+    --chains."$NETWORK".customRpcUrls "$RPC_URL" \
+    --checkpointSyncer.type localStorage \
+    --checkpointSyncer.path /hyperlane_db_$NETWORK/checkpoints
     done
 }
 
