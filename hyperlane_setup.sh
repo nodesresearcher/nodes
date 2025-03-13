@@ -138,7 +138,7 @@ function show_menu() {
     show_logo
     echo -e "${CLR_GREEN}1) 🚀 Установить ноды${CLR_RESET}"
     echo -e "${CLR_GREEN}2) 📜 Просмотр логов конкретной ноды${CLR_RESET}"
-    echo -e "${CLR_GREEN}3) 🗑️ Удалить конкретную ноду${CLR_RESET}"
+    echo -e "${CLR_GREEN}3) 🗑️  Удалить конкретную ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 🔄 Переустановить конкретную ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}5) ❌ Выйти${CLR_RESET}"
     read -r choice
