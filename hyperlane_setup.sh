@@ -8,9 +8,10 @@ CLR_ERROR='\033[1;31;40m'  # Красный текст на черном фон�
 CLR_RESET='\033[0m'  # Сброс форматирования
 CLR_GREEN='\033[0;32m' # Зеленый текст
 
-NETWORKS=(base optimism arbitrum polygon avalanche bsc fantom moonbeam gnosis celo)
+# Доступные сети (без BNB, добавили Scroll)
+NETWORKS=(base optimism arbitrum polygon avalanche scroll linea gnosis abstract zora)
 
-# Функция для отображения логотипа
+# Функция отображения логотипа
 function show_logo() {
     echo -e "${CLR_INFO}      Добро пожаловать в скрипт управления нодами Hyperlane      ${CLR_RESET}"
     curl -s https://raw.githubusercontent.com/profitnoders/Profit_Nodes/refs/heads/main/logo_new.sh | bash
@@ -44,11 +45,10 @@ function select_network() {
 function view_logs() {
     echo -e "${CLR_INFO}Выберите сеть для просмотра логов:${CLR_RESET}"
     
-    select NETWORK in base optimism arbitrum polygon avalanche bsc fantom moonbeam gnosis celo; do
+    select NETWORK in "${NETWORKS[@]}"; do
         if [ -n "$NETWORK" ]; then
             CONTAINER_NAME="hyperlane_$NETWORK"
 
-            # Проверяем, существует ли контейнер перед тем, как запускать логи
             if docker ps -a --format "{{.Names}}" | grep -q "^$CONTAINER_NAME$"; then
                 echo -e "${CLR_INFO}Просмотр логов для $NETWORK...${CLR_RESET}"
                 docker logs --tail 50 -f "$CONTAINER_NAME"
@@ -76,19 +76,6 @@ function remove_node() {
     fi
 }
 
-# Функция переустановки конкретной ноды
-function reinstall_node() {
-    NETWORK=$(select_network)
-    if [ -n "$NETWORK" ]; then
-        echo -e "${CLR_INFO}Введите RPC для сети $NETWORK:${CLR_RESET}"
-        read -r RPC_URL
-        remove_node "$NETWORK"
-        install_node "$NETWORK" "$RPC_URL"
-    else
-        echo -e "${CLR_ERROR}Неверный выбор сети.${CLR_RESET}"
-    fi
-}
-
 # Функция установки ноды
 function install_node() {
     install_dependencies
@@ -102,7 +89,7 @@ function install_node() {
 
     case $network_choice in
         1) SELECTED_NETWORKS=(base optimism arbitrum) ;;
-        2) SELECTED_NETWORKS=(base optimism arbitrum polygon avalanche bsc) ;;
+        2) SELECTED_NETWORKS=(base optimism arbitrum polygon avalanche scroll) ;;
         3) SELECTED_NETWORKS=("${NETWORKS[@]}") ;;
         4) 
             SELECTED_NETWORKS=()
@@ -131,19 +118,19 @@ function install_node() {
         mkdir -p "$HOME/hyperlane_db_$NETWORK" && chmod -R 777 "$HOME/hyperlane_db_$NETWORK"
 
         docker run -d -it \
-    --name hyperlane_$NETWORK \
-    --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
-    gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
-    ./validator \
-    --db "/hyperlane_db_$NETWORK" \
-    --originChainName "$NETWORK" \
-    --reorgPeriod 1 \
-    --validator.id "$VALIDATOR_NAME" \
-    --validator.key "$PRIVATE_KEY" \
-    --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
-    --chains."$NETWORK".customRpcUrls "$RPC_URL" \
-    --checkpointSyncer.type localStorage \
-    --checkpointSyncer.path /hyperlane_db_$NETWORK/checkpoints
+        --name hyperlane_$NETWORK \
+        --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
+        gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
+        ./validator \
+        --db "/hyperlane_db_$NETWORK" \
+        --originChainName "$NETWORK" \
+        --reorgPeriod 1 \
+        --validator.id "$VALIDATOR_NAME" \
+        --validator.key "$PRIVATE_KEY" \
+        --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
+        --chains."$NETWORK".customRpcUrls "$RPC_URL" \
+        --checkpointSyncer.type localStorage \
+        --checkpointSyncer.path /hyperlane_db_$NETWORK/checkpoints
     done
 }
 
