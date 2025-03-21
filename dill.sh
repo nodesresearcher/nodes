@@ -13,19 +13,19 @@ DILL_VERSION="v1.0.4"
 DILL_DIR="$HOME/dill"
 DILL_LINUX_AMD64_URL="https://dill-release.s3.ap-southeast-1.amazonaws.com/$DILL_VERSION/dill-$DILL_VERSION-linux-amd64.tar.gz"
 
-# Функция логотипа
+# Логотип
 function show_logo() {
     echo -e "${CLR_INFO}      Добро пожаловать в скрипт управления нодами Dill      ${CLR_RESET}"
     curl -s https://raw.githubusercontent.com/profitnoders/Profit_Nodes/refs/heads/main/logo_new.sh | bash
 }
 
-# Проверка и установка необходимых пакетов
+# Зависимости
 function install_dependencies() {
     sudo apt update && sudo apt upgrade -y
-    sudo apt install -y curl tar
+    sudo apt install -y curl tar lsof
 }
 
-# Функция установки ноды
+# Установка ноды
 function install_node() {
     install_dependencies
 
@@ -36,7 +36,7 @@ function install_node() {
     curl -O "$DILL_LINUX_AMD64_URL"
     tar -zxvf "dill-$DILL_VERSION-linux-amd64.tar.gz"
 
-    # Переместим файлы из вложенной папки dill/ если они там оказались
+    # Если файлы внутри папки dill — переместим
     if [ -d "$DILL_DIR/dill" ]; then
         mv dill/* .
         rm -rf dill
@@ -44,63 +44,120 @@ function install_node() {
 
     echo -e "${CLR_SUCCESS}Установка завершена!${CLR_RESET}"
 
-    # Запуск ноды
-    echo -e "${CLR_INFO}Запускаем ноду...${CLR_RESET}"
-    bash "$DILL_DIR/1_launch_dill_node.sh"
+    echo -e "${CLR_INFO}Запускаем ноду с кастомными портами...${CLR_RESET}"
+    ./dill-node --light \
+        --datadir "$DILL_DIR/light_node/data/beacondata" \
+        --genesis-state "$DILL_DIR/genesis.ssz" \
+        --grpc-gateway-host 0.0.0.0 \
+        --initial-validators "$DILL_DIR/validators.json" \
+        --block-batch-limit 128 \
+        --min-sync-peers 1 \
+        --minimum-peers-per-subnet 1 \
+        --alps \
+        --enable-debug-rpc-endpoints \
+        --suggested-fee-recipient 0x000000000000000000000000000000000000dEaD \
+        --log-format json \
+        --verbosity error \
+        --log-file "$DILL_DIR/light_node/logs/dill.log" \
+        --exec-http \
+        --exec-http.api eth,net,web3 \
+        --exec-gcmode archive \
+        --exec-syncmode full \
+        --exec-mine=false \
+        --accept-terms-of-use \
+        --embedded-validator \
+        --validator-datadir "$DILL_DIR/light_node/data/validatordata" \
+        --wallet-password-file "$DILL_DIR/validator_keys/keystore_password.txt" \
+        --wallet-dir "$DILL_DIR/keystore" \
+        --rpc-port 4050 \
+        --monitoring-port 9080 \
+        --validator-monitoring-port 9082 \
+        --p2p-tcp-port 13000 \
+        --exec-authrpc.port 8551 \
+        --exec-http.port 8546 \
+        --grpc-gateway-port 3500 \
+        --exec-port 30303 \
+        --p2p-udp-port 12000
 }
 
-# Функция добавления валидатора
+# Добавить валидатора
 function add_validator() {
     echo -e "${CLR_INFO}Добавляем валидатора...${CLR_RESET}"
     bash "$DILL_DIR/2_add_validator.sh"
 }
 
-# Функция просмотра логов
-function view_logs() {
-    echo -e "${CLR_INFO}Просмотр логов Dill Node...${CLR_RESET}"
-    journalctl -fu dill -n 50
+# Перезапуск
+function restart_node() {
+    echo -e "${CLR_INFO}Перезапускаем Dill ноду...${CLR_RESET}"
+    bash "$DILL_DIR/start_dill_node.sh"
+    echo -e "${CLR_SUCCESS}Нода перезапущена!${CLR_RESET}"
 }
 
-# Функция удаления ноды
+# Функция отображения всех pubkey валидаторов
+function show_pubkeys() {
+    echo -e "${CLR_INFO}Список pubkey всех валидаторов:${CLR_RESET}"
+    if [ -d "$DILL_DIR/validator_keys" ]; then
+        grep -oP '(?<="pubkey": ")[^"]+' "$DILL_DIR"/validator_keys/*.json | sort -u
+    else
+        echo -e "${CLR_WARNING}Папка validator_keys не найдена.${CLR_RESET}"
+    fi
+}
+
+# Проверка состояния ноды (health check)
+function check_node_status() {
+    if [ -f "$DILL_DIR/health_check.sh" ]; then
+        echo -e "${CLR_INFO}Запуск проверки состояния ноды...${CLR_RESET}"
+        bash "$DILL_DIR/health_check.sh" -v
+    else
+        echo -e "${CLR_WARNING}Скрипт health_check.sh не найден.${CLR_RESET}"
+    fi
+}
+
+
 function remove_node() {
     echo -e "${CLR_WARNING}Вы уверены, что хотите удалить ноду? (y/n)${CLR_RESET}"
     read -r confirm
     if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-        echo -e "${CLR_INFO}Останавливаем и удаляем ноду...${CLR_RESET}"
-        sudo systemctl stop dill
-        sudo systemctl disable dill
-        rm -rf "$DILL_DIR"
-        echo -e "${CLR_SUCCESS}Нода удалена!${CLR_RESET}"
+        echo -e "${CLR_INFO}Останавливаем процессы и удаляем папку...${CLR_RESET}"
+
+        if pgrep -f dill-node > /dev/null; then
+            pkill -f dill-node
+            echo -e "${CLR_SUCCESS}Процесс dill-node остановлен.${CLR_RESET}"
+        else
+            echo -e "${CLR_WARNING}Процесс dill-node не найден.${CLR_RESET}"
+        fi
+
+        if [ -d "$DILL_DIR" ]; then
+            rm -rf "$DILL_DIR"
+            echo -e "${CLR_SUCCESS}Папка $DILL_DIR удалена.${CLR_RESET}"
+        else
+            echo -e "${CLR_WARNING}Папка $DILL_DIR не найдена.${CLR_RESET}"
+        fi
     else
         echo -e "${CLR_WARNING}Операция отменена.${CLR_RESET}"
     fi
 }
 
-# Функция перезапуска ноды
-function restart_node() {
-    echo -e "${CLR_INFO}Перезапускаем ноду...${CLR_RESET}"
-    sudo systemctl restart dill
-    echo -e "${CLR_SUCCESS}Нода успешно перезапущена!${CLR_RESET}"
-}
 
-# Меню
 function show_menu() {
     show_logo
-    echo -e "${CLR_GREEN}1) 🚀 Установить ноду${CLR_RESET}"
-    echo -e "${CLR_GREEN}2) 🏛  Добавить валидатора${CLR_RESET}"
-    echo -e "${CLR_GREEN}3) 📜 Просмотр логов${CLR_RESET}"
-    echo -e "${CLR_GREEN}4) 🔄 Перезапустить ноду${CLR_RESET}"
-    echo -e "${CLR_GREEN}5) 🗑  Удалить ноду${CLR_RESET}"
-    echo -e "${CLR_GREEN}6) ❌ Выйти${CLR_RESET}"
+    echo -e "${CLR_GREEN}1) 🚀 Установить light node${CLR_RESET}"
+    echo -e "${CLR_GREEN}2) ➕ Добавить валидатора${CLR_RESET}"
+    echo -e "${CLR_GREEN}3) 🔑 Показать все pubkey валидаторов${CLR_RESET}"
+    echo -e "${CLR_GREEN}4) 📊 Проверить статус ноды${CLR_RESET}"
+    echo -e "${CLR_GREEN}5) 🔄 Перезапустить ноду${CLR_RESET}"
+    echo -e "${CLR_GREEN}6) 🗑 Удалить ноду${CLR_RESET}"
+    echo -e "${CLR_GREEN}7) ❌ Выйти${CLR_RESET}"
     echo -ne "${CLR_INFO}Введите номер действия: ${CLR_RESET}"
     read -r choice
     case $choice in
         1) install_node ;;
         2) add_validator ;;
-        3) view_logs ;;
-        4) restart_node ;;
-        5) remove_node ;;
-        6) exit 0 ;;
+        3) show_pubkeys ;;
+        4) check_node_status ;;
+        5) restart_node ;;
+        6) remove_node ;;
+        7) exit 0 ;;
         *) echo -e "${CLR_ERROR}Неверный выбор!${CLR_RESET}"; sleep 1; show_menu ;;
     esac
 }
