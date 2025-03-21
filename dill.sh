@@ -31,13 +31,19 @@ function install_node() {
 
     echo -e "${CLR_INFO}Скачиваем и устанавливаем Dill Node...${CLR_RESET}"
     mkdir -p "$DILL_DIR"
-    cd "$DILL_DIR"
+    cd "$DILL_DIR" || exit 1
 
     curl -O "$DILL_LINUX_AMD64_URL"
     tar -zxvf "dill-$DILL_VERSION-linux-amd64.tar.gz"
 
+    # Переместим файлы из вложенной папки dill/ если они там оказались
+    if [ -d "$DILL_DIR/dill" ]; then
+        mv dill/* .
+        rm -rf dill
+    fi
+
     echo -e "${CLR_SUCCESS}Установка завершена!${CLR_RESET}"
-    
+
     # Запуск ноды
     echo -e "${CLR_INFO}Запускаем ноду...${CLR_RESET}"
     bash "$DILL_DIR/1_launch_dill_node.sh"
@@ -86,6 +92,7 @@ function show_menu() {
     echo -e "${CLR_GREEN}4) 🔄 Перезапустить ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}5) 🗑  Удалить ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}6) ❌ Выйти${CLR_RESET}"
+    echo -ne "${CLR_INFO}Введите номер действия: ${CLR_RESET}"
     read -r choice
     case $choice in
         1) install_node ;;
@@ -94,7 +101,7 @@ function show_menu() {
         4) restart_node ;;
         5) remove_node ;;
         6) exit 0 ;;
-        *) show_menu ;;
+        *) echo -e "${CLR_ERROR}Неверный выбор!${CLR_RESET}"; sleep 1; show_menu ;;
     esac
 }
 
