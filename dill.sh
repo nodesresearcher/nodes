@@ -71,15 +71,18 @@ function restart_node() {
     echo -e "${CLR_SUCCESS}Нода перезапущена!${CLR_RESET}"
 }
 
-# Функция отображения всех pubkey валидаторов
+# Функция отображения всех аккаунтов через accounts list
 function show_pubkeys() {
-    echo -e "${CLR_INFO}Список pubkey всех валидаторов:${CLR_RESET}"
-    if [ -d "$DILL_DIR/validator_keys" ]; then
-        grep -oP '(?<="pubkey": ")[^"]+' "$DILL_DIR"/validator_keys/*.json | sort -u
+    echo -e "${CLR_INFO}Список валидаторов через accounts list:${CLR_RESET}"
+    if [ -f "$DILL_DIR/dill-node" ]; then
+        "$DILL_DIR/dill-node" accounts list \
+            --wallet-dir "$DILL_DIR/keystore" \
+            --wallet-password-file "$DILL_DIR/validator_keys/keystore_password.txt"
     else
-        echo -e "${CLR_WARNING}Папка validator_keys не найдена.${CLR_RESET}"
+        echo -e "${CLR_WARNING}dill-node не найден. Возможно, нода не установлена.${CLR_RESET}"
     fi
 }
+
 
 # Проверка состояния ноды (health check)
 function check_node_status() {
