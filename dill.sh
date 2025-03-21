@@ -146,7 +146,7 @@ function show_menu() {
     echo -e "${CLR_GREEN}3) 🔑 Показать все pubkey валидаторов${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 📊 Проверить статус ноды${CLR_RESET}"
     echo -e "${CLR_GREEN}5) 🔄 Перезапустить ноду${CLR_RESET}"
-    echo -e "${CLR_GREEN}6) 🗑 Удалить ноду${CLR_RESET}"
+    echo -e "${CLR_GREEN}6) 🗑  Удалить ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}7) ❌ Выйти${CLR_RESET}"
     echo -ne "${CLR_INFO}Введите номер действия: ${CLR_RESET}"
     read -r choice
