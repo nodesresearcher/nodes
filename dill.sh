@@ -81,10 +81,10 @@ function restart_node() {
 function show_menu() {
     show_logo
     echo -e "${CLR_GREEN}1) 🚀 Установить ноду${CLR_RESET}"
-    echo -e "${CLR_GREEN}2) 🏛 Добавить валидатора${CLR_RESET}"
+    echo -e "${CLR_GREEN}2) 🏛  Добавить валидатора${CLR_RESET}"
     echo -e "${CLR_GREEN}3) 📜 Просмотр логов${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 🔄 Перезапустить ноду${CLR_RESET}"
-    echo -e "${CLR_GREEN}5) 🗑 Удалить ноду${CLR_RESET}"
+    echo -e "${CLR_GREEN}5) 🗑  Удалить ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}6) ❌ Выйти${CLR_RESET}"
     read -r choice
     case $choice in
