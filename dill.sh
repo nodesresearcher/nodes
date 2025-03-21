@@ -67,9 +67,21 @@ function add_validator() {
 # Перезапуск
 function restart_node() {
     echo -e "${CLR_INFO}Перезапускаем Dill ноду...${CLR_RESET}"
+    
+    # Завершаем работающий процесс dill-node, если он есть
+    if pgrep -f dill-node > /dev/null; then
+        echo -e "${CLR_INFO}Останавливаем текущий процесс dill-node...${CLR_RESET}"
+        pkill -f dill-node
+        sleep 2
+    fi
+
+    # Запуск
+    echo -e "${CLR_INFO}Запускаем ноду заново...${CLR_RESET}"
     bash "$DILL_DIR/start_dill_node.sh"
-    echo -e "${CLR_SUCCESS}Нода перезапущена!${CLR_RESET}"
+
+    echo -e "${CLR_SUCCESS}Нода успешно перезапущена!${CLR_RESET}"
 }
+
 
 # Функция отображения всех аккаунтов через accounts list
 function show_pubkeys() {
