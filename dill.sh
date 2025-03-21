@@ -26,7 +26,6 @@ function install_dependencies() {
 }
 
 
-
 function install_node() {
     install_dependencies
 
@@ -49,9 +48,12 @@ function install_node() {
     sed -i 's/8545/8546/g' default_ports.txt
     sed -i 's/4000/4050/g' default_ports.txt
 
+    echo -e "${CLR_SUCCESS}Кастомные порты применены${CLR_RESET}"
+
     echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
     bash "$DILL_DIR/1_launch_dill_node.sh"
 }
+
 
 
 
