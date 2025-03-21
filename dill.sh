@@ -25,7 +25,8 @@ function install_dependencies() {
     sudo apt install -y curl tar lsof
 }
 
-# Установка ноды
+
+
 function install_node() {
     install_dependencies
 
@@ -44,41 +45,16 @@ function install_node() {
 
     echo -e "${CLR_SUCCESS}Установка завершена!${CLR_RESET}"
 
-    echo -e "${CLR_INFO}Запускаем ноду с кастомными портами...${CLR_RESET}"
-    ./dill-node --light \
-        --datadir "$DILL_DIR/light_node/data/beacondata" \
-        --genesis-state "$DILL_DIR/genesis.ssz" \
-        --grpc-gateway-host 0.0.0.0 \
-        --initial-validators "$DILL_DIR/validators.json" \
-        --block-batch-limit 128 \
-        --min-sync-peers 1 \
-        --minimum-peers-per-subnet 1 \
-        --alps \
-        --enable-debug-rpc-endpoints \
-        --suggested-fee-recipient 0x000000000000000000000000000000000000dEaD \
-        --log-format json \
-        --verbosity error \
-        --log-file "$DILL_DIR/light_node/logs/dill.log" \
-        --exec-http \
-        --exec-http.api eth,net,web3 \
-        --exec-gcmode archive \
-        --exec-syncmode full \
-        --exec-mine=false \
-        --accept-terms-of-use \
-        --embedded-validator \
-        --validator-datadir "$DILL_DIR/light_node/data/validatordata" \
-        --wallet-password-file "$DILL_DIR/validator_keys/keystore_password.txt" \
-        --wallet-dir "$DILL_DIR/keystore" \
-        --rpc-port 4050 \
-        --monitoring-port 9080 \
-        --validator-monitoring-port 9082 \
-        --p2p-tcp-port 13000 \
-        --exec-authrpc.port 8551 \
-        --exec-http.port 8546 \
-        --grpc-gateway-port 3500 \
-        --exec-port 30303 \
-        --p2p-udp-port 12000
+    # Заменим дефолтные порты
+    sed -i 's/8545/8546/g' default_ports.txt
+    sed -i 's/4000/4050/g' default_ports.txt
+
+    echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
+    bash "$DILL_DIR/1_launch_dill_node.sh"
 }
+
+
+
 
 # Добавить валидатора
 function add_validator() {
