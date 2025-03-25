@@ -81,7 +81,7 @@ add_new_docker_node() {
     fi
 
     port=4001
-    while docker ps -a --format '{{.Names}}' | grep -q "dria_node_$port"; do
+    while ss -tuln | grep -q ":$port "; do
         ((port++))
     done
 
