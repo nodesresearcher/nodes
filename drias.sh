@@ -95,7 +95,8 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update && \
     apt install -y curl screen proxychains4 && \
-    curl -fsSL https://dria.co/launcher | bash && \
+    curl -L https://github.com/firstbatchxyz/dkn-compute-launcher/releases/download/v0.1.5/dkn-compute-launcher-linux-amd64 -o /usr/local/bin/dkn-compute-launcher && \
+    chmod +x /usr/local/bin/dkn-compute-launcher && \
     apt clean
 RUN echo "strict_chain\nproxy_dns\ntcp_read_time_out 15000\ntcp_connect_time_out 8000\n[ProxyList]\nhttp $proxy_ip $proxy_port $proxy_user $proxy_pass" > /etc/proxychains4.conf
 CMD proxychains4 dkn-compute-launcher --port=$port start
