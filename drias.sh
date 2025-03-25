@@ -25,7 +25,6 @@ function install_dependencies() {
     sudo systemctl enable docker && sudo systemctl start docker
 }
 
-# Установка базовой ноды (старая реализация)
 function install_node() {
     echo -e "${CLR_INFO}Начинаем установку ноды Dria...${CLR_RESET}"
     install_dependencies
@@ -72,7 +71,6 @@ function remove_node() {
     fi
 }
 
-# Добавление новой изолированной ноды через Docker с прокси
 add_new_docker_node() {
     echo -e "${CLR_INFO}Введите прокси в формате ip:port:username:password:${CLR_RESET}"
     read -r proxy_input
@@ -114,6 +112,21 @@ list_nodes() {
     docker ps --filter name=dria_node_ --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
 }
 
+gpu_status() {
+    echo -e "${CLR_INFO}Текущая загрузка GPU:${CLR_RESET}"
+    nvidia-smi
+}
+
+schedule_restarts() {
+    echo -e "${CLR_INFO}Настройка случайных перезапусков контейнеров в фоне...${CLR_RESET}"
+    containers=$(docker ps --filter name=dria_node_ --format "{{.Names}}")
+    for container in $containers; do
+        delay=$((RANDOM % 3600 + 3600))
+        (sleep $delay && echo -e "${CLR_WARNING}🔁 Перезапуск $container через $delay сек...${CLR_RESET}" && docker restart "$container") &
+    done
+    echo -e "${CLR_SUCCESS}✅ Таймеры перезапуска установлены для всех контейнеров.${CLR_RESET}"
+}
+
 # Меню
 function show_menu() {
     show_logo
@@ -125,7 +138,9 @@ function show_menu() {
     echo -e "${CLR_GREEN}6) 🗑️  Удалить ноду${CLR_RESET}"
     echo -e "${CLR_GREEN}7) ➕ Добавить изолированную Docker-ноду с прокси${CLR_RESET}"
     echo -e "${CLR_GREEN}8) 📄 Посмотреть список Docker-нод${CLR_RESET}"
-    echo -e "${CLR_GREEN}9) ❌ Выйти${CLR_RESET}"
+    echo -e "${CLR_GREEN}9) 📈 Посмотреть загрузку GPU${CLR_RESET}"
+    echo -e "${CLR_GREEN}10) 🔁 Настроить случайные перезапуски контейнеров${CLR_RESET}"
+    echo -e "${CLR_GREEN}11) ❌ Выйти${CLR_RESET}"
     echo -e "${CLR_INFO}Введите номер:${CLR_RESET}"
     read -r choice
 
@@ -138,7 +153,9 @@ function show_menu() {
         6) remove_node ;;
         7) add_new_docker_node ;;
         8) list_nodes ;;
-        9) echo -e "${CLR_ERROR}Выход...${CLR_RESET}" ; exit 0 ;;
+        9) gpu_status ;;
+        10) schedule_restarts ;;
+        11) echo -e "${CLR_ERROR}Выход...${CLR_RESET}" ; exit 0 ;;
         *) echo -e "${CLR_WARNING}Неверный выбор. Попробуйте снова.${CLR_RESET}" ;;
     esac
 }
