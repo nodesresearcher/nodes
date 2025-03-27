@@ -198,6 +198,9 @@ function install_node() {
     read -r VALIDATOR_NAME
     echo -e "${CLR_INFO}Введите private key EVM кошелька c 0x в начале:${CLR_RESET}"
     read -r PRIVATE_KEY
+    export VALIDATOR_NAME
+    export PRIVATE_KEY
+
 
     for NETWORK in "${SELECTED_NETWORKS[@]}"; do
         RPC_URL="${RPC_URLS[$NETWORK]}"
@@ -233,7 +236,6 @@ function install_dependencies() {
     fi
 }
 
-# Изменение RPC вручную
 function change_rpc() {
     echo -e "${CLR_INFO}Выберите сеть, для которой хотите изменить RPC:${CLR_RESET}"
     select NETWORK in "${!RPC_URLS[@]}"; do
@@ -243,12 +245,40 @@ function change_rpc() {
             read -r NEW_RPC
             RPC_URLS[$NETWORK]="$NEW_RPC"
             echo -e "${CLR_SUCCESS}RPC для $NETWORK обновлён на: $NEW_RPC${CLR_RESET}"
+
+            CONTAINER_NAME="hyperlane_$NETWORK"
+
+            if docker ps -a --format "{{.Names}}" | grep -q "^$CONTAINER_NAME$"; then
+                echo -e "${CLR_INFO}Перезапуск контейнера $CONTAINER_NAME с новым RPC...${CLR_RESET}"
+                docker stop "$CONTAINER_NAME"
+                docker rm "$CONTAINER_NAME"
+
+                docker run -d -it \
+                --name "$CONTAINER_NAME" \
+                --mount type=bind,source="$HOME/hyperlane_db_$NETWORK",target="/hyperlane_db_$NETWORK" \
+                gcr.io/abacus-labs-dev/hyperlane-agent:agents-v1.0.0 \
+                ./validator \
+                --db "/hyperlane_db_$NETWORK" \
+                --originChainName "$NETWORK" \
+                --reorgPeriod 1 \
+                --validator.id "$VALIDATOR_NAME" \
+                --validator.key "$PRIVATE_KEY" \
+                --chains."$NETWORK".signer.key "$PRIVATE_KEY" \
+                --chains."$NETWORK".customRpcUrls "$NEW_RPC" \
+                --checkpointSyncer.type localStorage \
+                --checkpointSyncer.path "/hyperlane_db_$NETWORK/checkpoints"
+
+                echo -e "${CLR_SUCCESS}Контейнер $CONTAINER_NAME перезапущен с новым RPC.${CLR_RESET}"
+            else
+                echo -e "${CLR_WARNING}Контейнер $CONTAINER_NAME не найден. Возможно, он ещё не установлен.${CLR_RESET}"
+            fi
             break
         else
             echo -e "${CLR_WARNING}Неверный выбор. Попробуйте снова.${CLR_RESET}"
         fi
     done
 }
+
 
 # Меню
 function show_menu() {
@@ -259,7 +289,9 @@ function show_menu() {
     echo -e "${CLR_GREEN}4) 🔄 Перезапустить ноды (одну или все)${CLR_RESET}"
     echo -e "${CLR_GREEN}5) ✏️  Изменить RPC вручную для выбранной сети${CLR_RESET}"
     echo -e "${CLR_GREEN}6) ❌ Выйти${CLR_RESET}"
+    echo -e "${CLR_INFO}Введите номер действия и нажмите Enter:${CLR_RESET}"
     read -r choice
+
     case $choice in
         1) install_node ;;
         2) view_logs ;;
