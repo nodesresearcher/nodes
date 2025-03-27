@@ -198,8 +198,10 @@ function install_node() {
     read -r VALIDATOR_NAME
     echo -e "${CLR_INFO}Введите private key EVM кошелька c 0x в начале:${CLR_RESET}"
     read -r PRIVATE_KEY
-    export VALIDATOR_NAME
-    export PRIVATE_KEY
+    # Сохраняем значения в файл, чтобы использовать в других функциях (например, при перезапуске с новым RPC)
+    echo "VALIDATOR_NAME=\"$VALIDATOR_NAME\"" > ~/.hyperlane_env
+    echo "PRIVATE_KEY=\"$PRIVATE_KEY\"" >> ~/.hyperlane_env
+
 
 
     for NETWORK in "${SELECTED_NETWORKS[@]}"; do
@@ -238,6 +240,14 @@ function install_dependencies() {
 
 function change_rpc() {
     echo -e "${CLR_INFO}Выберите сеть, для которой хотите изменить RPC:${CLR_RESET}"
+    # Загружаем сохранённые переменные
+    if [[ -f ~/.hyperlane_env ]]; then
+        source ~/.hyperlane_env
+    else
+        echo -e "${CLR_ERROR}❌ Не найдены сохранённые данные валидатора. Сначала установите ноду.${CLR_RESET}"
+        return
+    fi
+
     select NETWORK in "${!RPC_URLS[@]}"; do
         if [[ -n "$NETWORK" ]]; then
             echo -e "${CLR_INFO}Текущий RPC для $NETWORK: ${CLR_SUCCESS}${RPC_URLS[$NETWORK]}${CLR_RESET}"
