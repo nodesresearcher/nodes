@@ -154,7 +154,8 @@ function restart_node() {
     esac
 }
 
-# Публичные RPC по умолчанию
+RPC_FILE="$HOME/.hyperlane_rpc"
+
 declare -A RPC_URLS=(
     [base]="https://base.drpc.org"
     [optimism]="https://op-pokt.nodies.app"
@@ -165,6 +166,14 @@ declare -A RPC_URLS=(
     [linea]="https://linea.drpc.org"
     [gnosis]="https://gnosis-pokt.nodies.app"
 )
+
+# Загрузка сохранённых RPC, если есть
+if [[ -f "$RPC_FILE" ]]; then
+    while IFS== read -r key value; do
+        RPC_URLS[$key]="$value"
+    done < "$RPC_FILE"
+fi
+
 
 # Функция установки ноды
 function install_node() {
@@ -254,6 +263,18 @@ function change_rpc() {
             echo -e "${CLR_INFO}Введите новый RPC для $NETWORK:${CLR_RESET}"
             read -r NEW_RPC
             RPC_URLS[$NETWORK]="$NEW_RPC"
+            
+            # Сохраняем в файл
+            RPC_URLS[$NETWORK]="$NEW_RPC"
+            echo "$NETWORK=$NEW_RPC" > "$RPC_FILE.tmp"
+            
+            # Добавляем все текущие значения
+            for net in "${!RPC_URLS[@]}"; do
+                echo "$net=${RPC_URLS[$net]}" >> "$RPC_FILE.tmp"
+            done
+            
+            mv "$RPC_FILE.tmp" "$RPC_FILE"
+
             echo -e "${CLR_SUCCESS}RPC для $NETWORK обновлён на: $NEW_RPC${CLR_RESET}"
 
             CONTAINER_NAME="hyperlane_$NETWORK"
