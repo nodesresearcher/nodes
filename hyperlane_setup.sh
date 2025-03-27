@@ -154,6 +154,17 @@ function restart_node() {
     esac
 }
 
+# Публичные RPC по умолчанию
+declare -A RPC_URLS=(
+    [base]="https://base.drpc.org"
+    [optimism]="https://op-pokt.nodies.app"
+    [arbitrum]="https://arbitrum.drpc.org"
+    [polygon]="https://polygon-pokt.nodies.app"
+    [avalanche]="https://avalanche.drpc.org"
+    [scroll]="https://scroll.drpc.org"
+    [linea]="https://linea.drpc.org"
+    [gnosis]="https://gnosis-pokt.nodies.app"
+)
 
 # Функция установки ноды
 function install_node() {
@@ -189,8 +200,9 @@ function install_node() {
     read -r PRIVATE_KEY
 
     for NETWORK in "${SELECTED_NETWORKS[@]}"; do
-        echo -e "${CLR_INFO}Введите вашу RPC для сети $NETWORK:${CLR_RESET}"
-        read -r RPC_URL
+        RPC_URL="${RPC_URLS[$NETWORK]}"
+        echo -e "${CLR_SUCCESS}Используется публичный RPC для $NETWORK: $RPC_URL${CLR_RESET}"
+
 
         mkdir -p "$HOME/hyperlane_db_$NETWORK" && chmod -R 777 "$HOME/hyperlane_db_$NETWORK"
 
@@ -221,6 +233,22 @@ function install_dependencies() {
     fi
 }
 
+# Изменение RPC вручную
+function change_rpc() {
+    echo -e "${CLR_INFO}Выберите сеть, для которой хотите изменить RPC:${CLR_RESET}"
+    select NETWORK in "${!RPC_URLS[@]}"; do
+        if [[ -n "$NETWORK" ]]; then
+            echo -e "${CLR_INFO}Текущий RPC для $NETWORK: ${CLR_SUCCESS}${RPC_URLS[$NETWORK]}${CLR_RESET}"
+            echo -e "${CLR_INFO}Введите новый RPC для $NETWORK:${CLR_RESET}"
+            read -r NEW_RPC
+            RPC_URLS[$NETWORK]="$NEW_RPC"
+            echo -e "${CLR_SUCCESS}RPC для $NETWORK обновлён на: $NEW_RPC${CLR_RESET}"
+            break
+        else
+            echo -e "${CLR_WARNING}Неверный выбор. Попробуйте снова.${CLR_RESET}"
+        fi
+    done
+}
 
 # Меню
 function show_menu() {
@@ -229,14 +257,16 @@ function show_menu() {
     echo -e "${CLR_GREEN}2) 📜 Просмотр логов конкретной ноды${CLR_RESET}"
     echo -e "${CLR_GREEN}3) 🗑️  Удалить ноды (одну или все)${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 🔄 Перезапустить ноды (одну или все)${CLR_RESET}"
-    echo -e "${CLR_GREEN}5) ❌ Выйти${CLR_RESET}"
+    echo -e "${CLR_GREEN}5) ✏️ Изменить RPC вручную для выбранной сети${CLR_RESET}"
+    echo -e "${CLR_GREEN}6) ❌ Выйти${CLR_RESET}"
     read -r choice
     case $choice in
         1) install_node ;;
         2) view_logs ;;
         3) remove_node ;;
         4) restart_node ;;
-        5) exit 0 ;;
+        5) change_rpc ;;
+        6) exit 0 ;;
         *) show_menu ;;
     esac
 }
