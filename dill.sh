@@ -59,7 +59,9 @@ function install_node() {
     fi
 
     echo -e "${CLR_INFO}Запускаем установку ноды...${CLR_RESET}"
-    ./dill.sh 1
+    cd "$DILL_DIR" || exit 1
+    ~/dill.sh 1
+
 }
 
 
