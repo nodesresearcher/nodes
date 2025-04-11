@@ -128,7 +128,7 @@ function remove_node() {
 
 function show_menu() {
     show_logo
-    echo -e "${CLR_GREEN}1) 🚀 Установить light node${CLR_RESET}"
+    echo -e "${CLR_GREEN}1) 🚀 Установить light/full node${CLR_RESET}"
     echo -e "${CLR_GREEN}2) ➕ Добавить валидатора${CLR_RESET}"
     echo -e "${CLR_GREEN}3) 🔑 Показать все pubkey валидаторов${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 📊 Проверить статус ноды${CLR_RESET}"
