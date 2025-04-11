@@ -29,90 +29,31 @@ function install_dependencies() {
 function install_node() {
     install_dependencies
 
-    echo -e "${CLR_INFO}Скачиваем и устанавливаем Dill Node...${CLR_RESET}"
+    echo -e "${CLR_INFO}Скачиваем dill.sh и архив ноды...${CLR_RESET}"
+    
+    cd ~ || exit 1
+    wget https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/dill.sh -O dill.sh
+    chmod +x dill.sh
+
+    # Скачиваем версию
+    latest_version=$(curl -s https://dill-release.s3.ap-southeast-1.amazonaws.com/version.txt)
+    wget https://dill-release.s3.ap-southeast-1.amazonaws.com/${latest_version}/dill-${latest_version}-linux-amd64.tar.gz -O dill.tar.gz
+
+    echo -e "${CLR_INFO}Распаковываем файлы...${CLR_RESET}"
     mkdir -p "$DILL_DIR"
-    cd "$DILL_DIR" || exit 1
+    tar -zxvf dill.tar.gz -C "$DILL_DIR"
 
-    curl -O "$DILL_LINUX_AMD64_URL"
-    tar -zxvf "dill-$DILL_VERSION-linux-amd64.tar.gz"
-
-    # Если файлы внутри папки dill — переместим
-    if [ -d "$DILL_DIR/dill" ]; then
-        mv dill/* .
-        rm -rf dill
-    fi
-
-    echo -e "${CLR_SUCCESS}Установка завершена!${CLR_RESET}"
-
-    # Заменим дефолтные порты
-    sed -i 's/8545/8546/g' default_ports.txt
-    sed -i 's/4000/4050/g' default_ports.txt
-    echo -e "${CLR_SUCCESS}Кастомные порты применены${CLR_RESET}"
-
-    echo -e "${CLR_INFO}Выберите тип валидатора...${CLR_RESET}"
-    while true; do
-        read -p "Выберите тип валидатора [1. light, 2. full]: " node_type
-        case "$node_type" in
-            "1"|"light")
-                node_type="light"
-                break
-                ;;
-            "2"|"full")
-                node_type="full"
-                break
-                ;;
-            *)
-                echo -e "${CLR_ERROR}Неверный выбор. Введите 1 или 2.${CLR_RESET}"
-                ;;
-        esac
-    done
-
-    bash "./1_launch_dill_node.sh" "$node_type" || exit 1
-
-    echo -e "${CLR_INFO}Создаём валидатора...${CLR_RESET}"
-    if [ "$node_type" == "light" ]; then
-        while true; do
-            read -p "Выберите действие [1. добавить валидатора, 2. восстановить валидатора]: " op
-            case "$op" in
-                "1")
-                    bash "./2_add_validator.sh"
-                    break
-                    ;;
-                "2")
-                    bash "./4_recover_validator.sh"
-                    break
-                    ;;
-                *)
-                    echo -e "${CLR_ERROR}Неверный выбор. Введите 1 или 2.${CLR_RESET}"
-                    ;;
-            esac
-        done
+    if [ -f "$DILL_DIR/default_ports.txt" ]; then
+        sed -i 's/8545/8546/g' "$DILL_DIR/default_ports.txt"
+        sed -i 's/4000/4050/g' "$DILL_DIR/default_ports.txt"
+        echo -e "${CLR_SUCCESS}Кастомные порты применены ДО запуска${CLR_RESET}"
     else
-        while true; do
-            read -p "Выберите действие [1. solo валидатор, 2. пул валидатор, 3. восстановление]: " op
-            case "$op" in
-                "1")
-                    bash "./2_add_validator.sh"
-                    break
-                    ;;
-                "2")
-                    bash "./3_add_pool_validator.sh"
-                    break
-                    ;;
-                "3")
-                    bash "./4_recover_validator.sh"
-                    break
-                    ;;
-                *)
-                    echo -e "${CLR_ERROR}Неверный выбор. Введите 1, 2 или 3.${CLR_RESET}"
-                    ;;
-            esac
-        done
+        echo -e "${CLR_WARNING}Файл default_ports.txt не найден, порты не заменены${CLR_RESET}"
     fi
 
-    echo -e "${CLR_SUCCESS}Установка и запуск валидатора завершены!${CLR_RESET}"
+    echo -e "${CLR_INFO}Запускаем установку ноды...${CLR_RESET}"
+    ./dill.sh 1
 }
-
 
 
 
