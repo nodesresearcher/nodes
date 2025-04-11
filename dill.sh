@@ -32,28 +32,36 @@ function install_node() {
     echo -e "${CLR_INFO}Скачиваем dill.sh и архив ноды...${CLR_RESET}"
     
     cd ~ || exit 1
-    wget -q https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/dill.sh -O dill.sh
+    wget https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/dill.sh -O dill.sh
     chmod +x dill.sh
 
+    # Скачиваем версию
     latest_version=$(curl -s https://dill-release.s3.ap-southeast-1.amazonaws.com/version.txt)
-    wget -q https://dill-release.s3.ap-southeast-1.amazonaws.com/${latest_version}/dill-${latest_version}-linux-amd64.tar.gz -O dill.tar.gz
+    wget https://dill-release.s3.ap-southeast-1.amazonaws.com/${latest_version}/dill-${latest_version}-linux-amd64.tar.gz -O dill.tar.gz
 
     echo -e "${CLR_INFO}Распаковываем файлы...${CLR_RESET}"
     mkdir -p "$DILL_DIR"
-    tar -zxf dill.tar.gz -C "$DILL_DIR"
+    tar -zxvf dill.tar.gz -C "$DILL_DIR"
 
+    # Применяем кастомные порты
     echo -e "${CLR_INFO}Ищем default_ports.txt и применяем кастомные порты...${CLR_RESET}"
-    if [ -f "$DILL_DIR/default_ports.txt" ]; then
-        sed -i 's/8545/8546/g' "$DILL_DIR/default_ports.txt"
-        sed -i 's/4000/4050/g' "$DILL_DIR/default_ports.txt"
-        echo -e "${CLR_SUCCESS}Кастомные порты применены ${CLR_RESET}"
+    PORT_FILE="$DILL_DIR/default_ports.txt"
+
+    if [ -f "$PORT_FILE" ]; then
+        sed -i 's/8545/8546/g' "$PORT_FILE"
+        sed -i 's/4000/4050/g' "$PORT_FILE"
+        echo -e "${CLR_SUCCESS}Кастомные порты применены ДО запуска${CLR_RESET}"
     else
-        echo -e "${CLR_WARNING}Файл default_ports.txt не найден, порты не заменены${CLR_RESET}"
+        echo -e "${CLR_WARNING}Файл default_ports.txt не найден, создаём вручную...${CLR_RESET}"
+        echo "8546" > "$PORT_FILE"
+        echo "4050" >> "$PORT_FILE"
+        echo -e "${CLR_SUCCESS}Файл default_ports.txt создан с кастомными портами${CLR_RESET}"
     fi
 
     echo -e "${CLR_INFO}Запускаем установку ноды...${CLR_RESET}"
     ./dill.sh 1
 }
+
 
 
 # Добавить валидатора
