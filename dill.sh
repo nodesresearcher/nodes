@@ -31,17 +31,14 @@ function install_node() {
     mkdir -p "$DILL_DIR"
     cd "$DILL_DIR" || exit 1
 
-    # Скачиваем последнюю доступную версию
     curl -LO https://dill-release.s3.ap-southeast-1.amazonaws.com/v1.0.5/dill-v1.0.5-linux-amd64.tar.gz
     tar -zxvf dill-v1.0.5-linux-amd64.tar.gz
 
-    # Если файлы в поддиректории dill — перенести их вверх
     if [ -d "$DILL_DIR/dill" ]; then
         mv dill/* .
         rm -rf dill
     fi
 
-    # Применим кастомные порты (если файл найден)
     if [ -f "default_ports.txt" ]; then
         sed -i 's/8545/8546/g' default_ports.txt
         sed -i 's/4000/4050/g' default_ports.txt
@@ -55,12 +52,12 @@ function install_node() {
     chmod +x upgrade.sh
     ./upgrade.sh
 
-    echo -e "${CLR_SUCCESS}Установка и обновление завершены!${CLR_RESET}"
+    echo -e "${CLR_INFO}Переходим к созданию валидатора...${CLR_RESET}"
+    bash "$DILL_DIR/2_add_validator.sh"
 
     echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
     bash "$DILL_DIR/1_launch_dill_node.sh"
 }
-
 
 
 # Добавить валидатора
