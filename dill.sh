@@ -32,21 +32,21 @@ function install_node() {
     echo -e "${CLR_INFO}Скачиваем dill.sh и архив ноды...${CLR_RESET}"
     
     cd ~ || exit 1
-    wget https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/dill.sh -O dill.sh
+    wget -q https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/dill.sh -O dill.sh
     chmod +x dill.sh
 
-    # Скачиваем версию
     latest_version=$(curl -s https://dill-release.s3.ap-southeast-1.amazonaws.com/version.txt)
-    wget https://dill-release.s3.ap-southeast-1.amazonaws.com/${latest_version}/dill-${latest_version}-linux-amd64.tar.gz -O dill.tar.gz
+    wget -q https://dill-release.s3.ap-southeast-1.amazonaws.com/${latest_version}/dill-${latest_version}-linux-amd64.tar.gz -O dill.tar.gz
 
     echo -e "${CLR_INFO}Распаковываем файлы...${CLR_RESET}"
     mkdir -p "$DILL_DIR"
-    tar -zxvf dill.tar.gz -C "$DILL_DIR"
+    tar -zxf dill.tar.gz -C "$DILL_DIR"
 
+    echo -e "${CLR_INFO}Ищем default_ports.txt и применяем кастомные порты...${CLR_RESET}"
     if [ -f "$DILL_DIR/default_ports.txt" ]; then
         sed -i 's/8545/8546/g' "$DILL_DIR/default_ports.txt"
         sed -i 's/4000/4050/g' "$DILL_DIR/default_ports.txt"
-        echo -e "${CLR_SUCCESS}Кастомные порты применены ДО запуска${CLR_RESET}"
+        echo -e "${CLR_SUCCESS}Кастомные порты применены ${CLR_RESET}"
     else
         echo -e "${CLR_WARNING}Файл default_ports.txt не найден, порты не заменены${CLR_RESET}"
     fi
@@ -54,7 +54,6 @@ function install_node() {
     echo -e "${CLR_INFO}Запускаем установку ноды...${CLR_RESET}"
     ./dill.sh 1
 }
-
 
 
 # Добавить валидатора
@@ -133,7 +132,7 @@ function remove_node() {
 
 function show_menu() {
     show_logo
-    echo -e "${CLR_GREEN}1) 🚀 Установить light node${CLR_RESET}"
+    echo -e "${CLR_GREEN}1) 🚀 Установить light/full node${CLR_RESET}"
     echo -e "${CLR_GREEN}2) ➕ Добавить валидатора${CLR_RESET}"
     echo -e "${CLR_GREEN}3) 🔑 Показать все pubkey валидаторов${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 📊 Проверить статус ноды${CLR_RESET}"
