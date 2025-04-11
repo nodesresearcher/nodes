@@ -8,10 +8,8 @@ CLR_ERROR='\033[1;31;40m'
 CLR_RESET='\033[0m'
 CLR_GREEN='\033[0;32m'
 
-# Переменные
-DILL_VERSION="v1.0.4"
+
 DILL_DIR="$HOME/dill"
-DILL_LINUX_AMD64_URL="https://dill-release.s3.ap-southeast-1.amazonaws.com/$DILL_VERSION/dill-$DILL_VERSION-linux-amd64.tar.gz"
 
 # Логотип
 function show_logo() {
@@ -33,14 +31,10 @@ function install_node() {
     mkdir -p "$DILL_DIR"
     cd "$DILL_DIR" || exit 1
 
-    curl -O "$DILL_LINUX_AMD64_URL"
-    tar -zxvf "dill-$DILL_VERSION-linux-amd64.tar.gz"
-
-    # Если файлы внутри папки dill — переместим
-    if [ -d "$DILL_DIR/dill" ]; then
-        mv dill/* .
-        rm -rf dill
-    fi
+    echo -e "${CLR_INFO}Устанавливаем через официальный upgrade.sh...${CLR_RESET}"
+    curl -sO https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/upgrade.sh
+    chmod +x upgrade.sh
+    ./upgrade.sh
 
     echo -e "${CLR_SUCCESS}Установка завершена!${CLR_RESET}"
 
