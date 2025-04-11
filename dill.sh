@@ -8,8 +8,10 @@ CLR_ERROR='\033[1;31;40m'
 CLR_RESET='\033[0m'
 CLR_GREEN='\033[0;32m'
 
-
+# Переменные
+DILL_VERSION="v1.0.5"
 DILL_DIR="$HOME/dill"
+DILL_LINUX_AMD64_URL="https://dill-release.s3.ap-southeast-1.amazonaws.com/$DILL_VERSION/dill-$DILL_VERSION-linux-amd64.tar.gz"
 
 # Логотип
 function show_logo() {
@@ -31,37 +33,29 @@ function install_node() {
     mkdir -p "$DILL_DIR"
     cd "$DILL_DIR" || exit 1
 
-    # Скачиваем последнюю версию
-    curl -LO https://dill-release.s3.ap-southeast-1.amazonaws.com/v1.0.5/dill-v1.0.5-linux-amd64.tar.gz
-    tar -zxvf dill-v1.0.5-linux-amd64.tar.gz
+    curl -O "$DILL_LINUX_AMD64_URL"
+    tar -zxvf "dill-$DILL_VERSION-linux-amd64.tar.gz"
 
+    # Если файлы внутри папки dill — переместим
     if [ -d "$DILL_DIR/dill" ]; then
         mv dill/* .
         rm -rf dill
     fi
 
-    # Применяем кастомные порты
-    if [ -f "default_ports.txt" ]; then
-        sed -i 's/8545/8546/g' default_ports.txt
-        sed -i 's/4000/4050/g' default_ports.txt
-        echo -e "${CLR_SUCCESS}Кастомные порты применены${CLR_RESET}"
-    else
-        echo -e "${CLR_WARNING}Файл default_ports.txt не найден, порты не изменены.${CLR_RESET}"
-    fi
+    echo -e "${CLR_SUCCESS}Установка завершена!${CLR_RESET}"
 
-    echo -e "${CLR_INFO}Обновляем через upgrade.sh...${CLR_RESET}"
-    curl -sO https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/upgrade.sh
-    chmod +x upgrade.sh
-    ./upgrade.sh
+    # Заменим дефолтные порты
+    sed -i 's/8545/8546/g' default_ports.txt
+    sed -i 's/4000/4050/g' default_ports.txt
 
-    echo -e "${CLR_INFO}Создаём валидатора вручную (интерактивно)...${CLR_RESET}"
-    "$DILL_DIR/dill-node" accounts create \
-        --wallet-dir "$DILL_DIR/keystore" \
-        --wallet-password-file "$DILL_DIR/validator_keys/keystore_password.txt"
+    echo -e "${CLR_SUCCESS}Кастомные порты применены${CLR_RESET}"
 
-    echo -e "${CLR_INFO}Теперь укажем тип валидатора: light или full${CLR_RESET}"
+    echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
     bash "$DILL_DIR/1_launch_dill_node.sh"
 }
+
+
+
 
 
 # Добавить валидатора
@@ -73,7 +67,7 @@ function add_validator() {
 # Перезапуск
 function restart_node() {
     echo -e "${CLR_INFO}Перезапускаем Dill ноду...${CLR_RESET}"
-    
+
     # Завершаем работающий процесс dill-node, если он есть
     if pgrep -f dill-node > /dev/null; then
         echo -e "${CLR_INFO}Останавливаем текущий процесс dill-node...${CLR_RESET}"
@@ -140,7 +134,7 @@ function remove_node() {
 
 function show_menu() {
     show_logo
-    echo -e "${CLR_GREEN}1) 🚀 Установить light/full node${CLR_RESET}"
+    echo -e "${CLR_GREEN}1) 🚀 Установить light node${CLR_RESET}"
     echo -e "${CLR_GREEN}2) ➕ Добавить валидатора${CLR_RESET}"
     echo -e "${CLR_GREEN}3) 🔑 Показать все pubkey валидаторов${CLR_RESET}"
     echo -e "${CLR_GREEN}4) 📊 Проверить статус ноды${CLR_RESET}"
