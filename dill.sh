@@ -47,19 +47,71 @@ function install_node() {
     # Заменим дефолтные порты
     sed -i 's/8545/8546/g' default_ports.txt
     sed -i 's/4000/4050/g' default_ports.txt
-
     echo -e "${CLR_SUCCESS}Кастомные порты применены${CLR_RESET}"
 
-    echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
-    read -p "Введите тип валидатора (light/full): " node_type
-    if [[ "$node_type" != "light" && "$node_type" != "full" ]]; then
-        echo -e "${CLR_ERROR}Неверный тип. Введите либо 'light', либо 'full'.${CLR_RESET}"
-        return
+    echo -e "${CLR_INFO}Выберите тип валидатора...${CLR_RESET}"
+    while true; do
+        read -p "Выберите тип валидатора [1. light, 2. full]: " node_type
+        case "$node_type" in
+            "1"|"light")
+                node_type="light"
+                break
+                ;;
+            "2"|"full")
+                node_type="full"
+                break
+                ;;
+            *)
+                echo -e "${CLR_ERROR}Неверный выбор. Введите 1 или 2.${CLR_RESET}"
+                ;;
+        esac
+    done
+
+    bash "./1_launch_dill_node.sh" "$node_type" || exit 1
+
+    echo -e "${CLR_INFO}Создаём валидатора...${CLR_RESET}"
+    if [ "$node_type" == "light" ]; then
+        while true; do
+            read -p "Выберите действие [1. добавить валидатора, 2. восстановить валидатора]: " op
+            case "$op" in
+                "1")
+                    bash "./2_add_validator.sh"
+                    break
+                    ;;
+                "2")
+                    bash "./4_recover_validator.sh"
+                    break
+                    ;;
+                *)
+                    echo -e "${CLR_ERROR}Неверный выбор. Введите 1 или 2.${CLR_RESET}"
+                    ;;
+            esac
+        done
+    else
+        while true; do
+            read -p "Выберите действие [1. solo валидатор, 2. пул валидатор, 3. восстановление]: " op
+            case "$op" in
+                "1")
+                    bash "./2_add_validator.sh"
+                    break
+                    ;;
+                "2")
+                    bash "./3_add_pool_validator.sh"
+                    break
+                    ;;
+                "3")
+                    bash "./4_recover_validator.sh"
+                    break
+                    ;;
+                *)
+                    echo -e "${CLR_ERROR}Неверный выбор. Введите 1, 2 или 3.${CLR_RESET}"
+                    ;;
+            esac
+        done
     fi
-    bash "$DILL_DIR/1_launch_dill_node.sh" "$node_type"
 
+    echo -e "${CLR_SUCCESS}Установка и запуск валидатора завершены!${CLR_RESET}"
 }
-
 
 
 
