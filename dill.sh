@@ -51,7 +51,13 @@ function install_node() {
     echo -e "${CLR_SUCCESS}Кастомные порты применены${CLR_RESET}"
 
     echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
-    bash "$DILL_DIR/1_launch_dill_node.sh"
+    read -p "Введите тип валидатора (light/full): " node_type
+    if [[ "$node_type" != "light" && "$node_type" != "full" ]]; then
+        echo -e "${CLR_ERROR}Неверный тип. Введите либо 'light', либо 'full'.${CLR_RESET}"
+        return
+    fi
+    bash "$DILL_DIR/1_launch_dill_node.sh" "$node_type"
+
 }
 
 
