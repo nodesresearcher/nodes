@@ -31,6 +31,7 @@ function install_node() {
     mkdir -p "$DILL_DIR"
     cd "$DILL_DIR" || exit 1
 
+    # Скачиваем последнюю версию
     curl -LO https://dill-release.s3.ap-southeast-1.amazonaws.com/v1.0.5/dill-v1.0.5-linux-amd64.tar.gz
     tar -zxvf dill-v1.0.5-linux-amd64.tar.gz
 
@@ -39,6 +40,7 @@ function install_node() {
         rm -rf dill
     fi
 
+    # Применяем кастомные порты
     if [ -f "default_ports.txt" ]; then
         sed -i 's/8545/8546/g' default_ports.txt
         sed -i 's/4000/4050/g' default_ports.txt
@@ -47,15 +49,17 @@ function install_node() {
         echo -e "${CLR_WARNING}Файл default_ports.txt не найден, порты не изменены.${CLR_RESET}"
     fi
 
-    echo -e "${CLR_INFO}Обновляем до последней Minipool-версии через upgrade.sh...${CLR_RESET}"
+    echo -e "${CLR_INFO}Обновляем через upgrade.sh...${CLR_RESET}"
     curl -sO https://raw.githubusercontent.com/DillLabs/launch-dill-node/main/upgrade.sh
     chmod +x upgrade.sh
     ./upgrade.sh
 
-    echo -e "${CLR_INFO}Переходим к созданию валидатора...${CLR_RESET}"
-    bash "$DILL_DIR/2_add_validator.sh"
+    echo -e "${CLR_INFO}Создаём валидатора вручную (интерактивно)...${CLR_RESET}"
+    "$DILL_DIR/dill-node" accounts create \
+        --wallet-dir "$DILL_DIR/keystore" \
+        --wallet-password-file "$DILL_DIR/validator_keys/keystore_password.txt"
 
-    echo -e "${CLR_INFO}Запускаем ноду через 1_launch_dill_node.sh...${CLR_RESET}"
+    echo -e "${CLR_INFO}Теперь укажем тип валидатора: light или full${CLR_RESET}"
     bash "$DILL_DIR/1_launch_dill_node.sh"
 }
 
